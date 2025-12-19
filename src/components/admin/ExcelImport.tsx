@@ -52,7 +52,11 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
     }
   };
 
-  const needsGeocoding = parsedData.some((row) => !row.LATITUDE || !row.LONGITUDE);
+  const needsGeocoding = parsedData.some((row) => {
+    const lat = row.Latitude || row.LATITUDE;
+    const lon = row.Longitude || row.LONGITUDE;
+    return !lat || !lon;
+  });
 
   return (
     <Card className="shadow-card">
@@ -62,7 +66,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
           Importar Planilha Excel
         </CardTitle>
         <CardDescription>
-          Faça upload de um arquivo .xlsx com as colunas: SEQUENCIAL, PROTOCOLO, SERVICO, ENDERECO, NUMERO, BAIRRO, MUNICIPIO, DATA, LATITUDE, LONGITUDE
+          Faça upload de um arquivo .xlsx com colunas como: PROTOCOLO, Sequencial, Serviço, Endereço, Número, Bairro, Município, Data Programada, Latitude, Longitude
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -130,20 +134,29 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {parsedData.slice(0, 10).map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-mono text-sm">{row.SEQUENCIAL}</TableCell>
-                      <TableCell className="text-sm">{row.ENDERECO}, {row.NUMERO}</TableCell>
-                      <TableCell className="text-sm">{row.BAIRRO}</TableCell>
-                      <TableCell className="text-center">
-                        {row.LATITUDE && row.LONGITUDE ? (
-                          <Check className="h-4 w-4 text-status-completed mx-auto" />
-                        ) : (
-                          <X className="h-4 w-4 text-status-not-executed mx-auto" />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {parsedData.slice(0, 10).map((row, i) => {
+                    const seq = row.Sequencial || row.SEQUENCIAL || '-';
+                    const addr = row.Endereço || row.ENDERECO || '';
+                    const num = row.Número || row.NUMERO || '';
+                    const bairro = row.Bairro || row.BAIRRO || '';
+                    const lat = row.Latitude || row.LATITUDE;
+                    const lon = row.Longitude || row.LONGITUDE;
+                    
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="font-mono text-sm">{seq}</TableCell>
+                        <TableCell className="text-sm">{addr}, {num}</TableCell>
+                        <TableCell className="text-sm">{bairro}</TableCell>
+                        <TableCell className="text-center">
+                          {lat && lon ? (
+                            <Check className="h-4 w-4 text-status-completed mx-auto" />
+                          ) : (
+                            <X className="h-4 w-4 text-status-not-executed mx-auto" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               {parsedData.length > 10 && (

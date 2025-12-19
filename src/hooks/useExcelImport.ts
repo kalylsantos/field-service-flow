@@ -56,24 +56,42 @@ export function useExcelImport() {
     }
   };
 
+  // Helper to normalize row data from different column formats
+  const normalizeRow = (row: ExcelRow) => {
+    return {
+      sequencial: row.Sequencial || row.SEQUENCIAL || null,
+      protocol: row.PROTOCOLO || null,
+      service_type: row.Serviço || row['Descrição Serviço'] || row.SERVICO || null,
+      address: row.Endereço || row.ENDERECO || null,
+      number: row.Número || row.NUMERO || null,
+      neighborhood: row.Bairro || row.BAIRRO || null,
+      municipality: row.Município || row.MUNICIPIO || null,
+      scheduled_date: row['Data Programada'] || row.DATA || null,
+      latitude: row.Latitude || row.LATITUDE || null,
+      longitude: row.Longitude || row.LONGITUDE || null,
+    };
+  };
+
   const geocodeData = async (data: ExcelRow[]): Promise<ExcelRow[]> => {
     setGeocoding(true);
     const updatedData: ExcelRow[] = [];
 
     for (const row of data) {
-      if (row.LATITUDE && row.LONGITUDE) {
+      const normalized = normalizeRow(row);
+      
+      if (normalized.latitude && normalized.longitude) {
         updatedData.push(row);
         continue;
       }
 
-      const fullAddress = `${row.ENDERECO}, ${row.NUMERO}, ${row.BAIRRO}, ${row.MUNICIPIO}`;
+      const fullAddress = `${normalized.address}, ${normalized.number}, ${normalized.neighborhood}, ${normalized.municipality}, Brasil`;
       const coords = await geocodeAddress(fullAddress);
 
       if (coords) {
         updatedData.push({
           ...row,
-          LATITUDE: coords.lat,
-          LONGITUDE: coords.lon,
+          Latitude: coords.lat,
+          Longitude: coords.lon,
         });
       } else {
         updatedData.push(row);
@@ -114,21 +132,27 @@ export function useExcelImport() {
 
       if (logError) throw logError;
 
-      const ordersToInsert = data.map((row) => ({
-        id: row.SEQUENCIAL || row.PROTOCOLO || `OS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        sequencial: row.SEQUENCIAL || null,
-        protocol: row.PROTOCOLO || null,
-        service_type: row.SERVICO || null,
-        address: row.ENDERECO || null,
-        number: row.NUMERO || null,
-        neighborhood: row.BAIRRO || null,
-        municipality: row.MUNICIPIO || null,
-        scheduled_date: row.DATA || null,
-        client_lat: row.LATITUDE || null,
-        client_long: row.LONGITUDE || null,
-        status: 'pending' as const,
-        import_log_id: importLog.id,
-      }));
+      const ordersToInsert = data.map((row) => {
+        const normalized = normalizeRow(row);
+        const lat = normalized.latitude ? parseFloat(String(normalized.latitude)) : null;
+        const lon = normalized.longitude ? parseFloat(String(normalized.longitude)) : null;
+        
+        return {
+          id: normalized.sequencial || normalized.protocol || `OS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          sequencial: normalized.sequencial,
+          protocol: normalized.protocol,
+          service_type: normalized.service_type,
+          address: normalized.address,
+          number: normalized.number,
+          neighborhood: normalized.neighborhood,
+          municipality: normalized.municipality,
+          scheduled_date: normalized.scheduled_date,
+          client_lat: isNaN(lat as number) ? null : lat,
+          client_long: isNaN(lon as number) ? null : lon,
+          status: 'pending' as const,
+          import_log_id: importLog.id,
+        };
+      });
 
       const { data: insertedData, error } = await supabase
         .from('service_orders')
