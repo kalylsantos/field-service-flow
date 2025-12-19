@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      import_logs: {
+        Row: {
+          batch_number: number
+          id: string
+          import_date: string
+          imported_at: string
+          imported_by: string | null
+          orders_count: number
+        }
+        Insert: {
+          batch_number?: number
+          id?: string
+          import_date?: string
+          imported_at?: string
+          imported_by?: string | null
+          orders_count?: number
+        }
+        Update: {
+          batch_number?: number
+          id?: string
+          import_date?: string
+          imported_at?: string
+          imported_by?: string | null
+          orders_count?: number
+        }
+        Relationships: []
+      }
       photos: {
         Row: {
           gps_lat: number | null
@@ -83,6 +110,7 @@ export type Database = {
           description: string | null
           finished_at: string | null
           id: string
+          import_log_id: string | null
           meter_reading: string | null
           municipality: string | null
           neighborhood: string | null
@@ -107,6 +135,7 @@ export type Database = {
           description?: string | null
           finished_at?: string | null
           id: string
+          import_log_id?: string | null
           meter_reading?: string | null
           municipality?: string | null
           neighborhood?: string | null
@@ -131,6 +160,7 @@ export type Database = {
           description?: string | null
           finished_at?: string | null
           id?: string
+          import_log_id?: string | null
           meter_reading?: string | null
           municipality?: string | null
           neighborhood?: string | null
@@ -152,6 +182,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_orders_import_log_id_fkey"
+            columns: ["import_log_id"]
+            isOneToOne: false
+            referencedRelation: "import_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -182,6 +219,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_batch_number: { Args: { p_date: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
