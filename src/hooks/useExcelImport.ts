@@ -69,6 +69,8 @@ export function useExcelImport() {
       scheduled_date: row['Data Programada'] || row.DATA || null,
       latitude: row.Latitude || row.LATITUDE || null,
       longitude: row.Longitude || row.LONGITUDE || null,
+      enrollment_id: row.Matrícula || null,
+      meter_number: row.Hidrômetro || row['HD Vinculado'] || null,
     };
   };
 
@@ -151,6 +153,8 @@ export function useExcelImport() {
           client_long: isNaN(lon as number) ? null : lon,
           status: 'pending' as const,
           import_log_id: importLog.id,
+          enrollment_id: normalized.enrollment_id,
+          meter_number: normalized.meter_number,
         };
       });
 

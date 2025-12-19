@@ -108,9 +108,11 @@ export type Database = {
           client_long: number | null
           created_at: string | null
           description: string | null
+          enrollment_id: string | null
           finished_at: string | null
           id: string
           import_log_id: string | null
+          meter_number: string | null
           meter_reading: string | null
           municipality: string | null
           neighborhood: string | null
@@ -133,9 +135,11 @@ export type Database = {
           client_long?: number | null
           created_at?: string | null
           description?: string | null
+          enrollment_id?: string | null
           finished_at?: string | null
           id: string
           import_log_id?: string | null
+          meter_number?: string | null
           meter_reading?: string | null
           municipality?: string | null
           neighborhood?: string | null
@@ -158,9 +162,11 @@ export type Database = {
           client_long?: number | null
           created_at?: string | null
           description?: string | null
+          enrollment_id?: string | null
           finished_at?: string | null
           id?: string
           import_log_id?: string | null
+          meter_number?: string | null
           meter_reading?: string | null
           municipality?: string | null
           neighborhood?: string | null
