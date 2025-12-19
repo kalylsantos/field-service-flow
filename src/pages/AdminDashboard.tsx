@@ -9,7 +9,8 @@ import { OrdersTable } from '@/components/admin/OrdersTable';
 import { TeamAssignment } from '@/components/admin/TeamAssignment';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FullPageLoading } from '@/components/LoadingSpinner';
-import { Droplets, LogOut, RefreshCw, Smartphone } from 'lucide-react';
+import { UserMenu } from '@/components/UserMenu';
+import { Droplets, RefreshCw, Smartphone } from 'lucide-react';
 import { ServiceOrderStatus } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -67,11 +68,9 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => setShowMobilePreview(true)} className="text-primary-foreground hover:bg-primary-foreground/10">
                 <Smartphone className="h-4 w-4 mr-2" />
-                Simulador Mobile
+                <span className="hidden sm:inline">Simulador Mobile</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-primary-foreground/10">
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
