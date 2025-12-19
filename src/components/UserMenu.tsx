@@ -38,7 +38,10 @@ export function UserMenu() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={signOut}
+          onSelect={(e) => {
+            e.preventDefault();
+            signOut();
+          }}
           className="text-destructive focus:text-destructive cursor-pointer"
         >
           <LogOut className="h-4 w-4 mr-2" />
