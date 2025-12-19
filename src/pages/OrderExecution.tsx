@@ -5,13 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { StatusBadge } from '@/components/StatusBadge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { FullPageLoading } from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { RESOLUTION_TYPES } from '@/types';
-import { ArrowLeft, MapPin, Navigation, Camera, FileText, Loader2, Play, Check, X } from 'lucide-react';
+import { RESOLUTION_TYPES, ServiceOrderStatus } from '@/types';
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Navigation, 
+  Camera, 
+  FileText, 
+  Loader2, 
+  Play, 
+  Check, 
+  Droplets,
+  Hash,
+  Calendar,
+  X,
+  AlertTriangle
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function OrderExecution() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -28,100 +44,378 @@ export default function OrderExecution() {
   const [showNotesDialog, setShowNotesDialog] = useState(false);
 
   if (loading) return <FullPageLoading />;
-  if (!order) return <div className="p-4 text-center">Ordem não encontrada</div>;
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm">
+          <CardContent className="p-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <p className="font-medium">Ordem não encontrada</p>
+            <Button onClick={() => navigate('/technician')} className="mt-4">
+              Voltar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const isExecuted = resolutionType.startsWith('Executado');
-  const canFinish = resolutionType && (!isExecuted || (meterReading && sealNumber && photos.length > 0));
+  const isImpedido = resolutionType.includes('Impedido') || resolutionType.includes('Não Localizado');
+  
+  const canFinish = (() => {
+    if (!resolutionType) return false;
+    if (isExecuted) return meterReading && photos.length > 0;
+    if (isImpedido) return notes.trim().length > 0;
+    return true;
+  })();
 
   const handleStart = async () => {
     const result = await startOrder();
-    if (result.success) toast({ title: 'Serviço iniciado!' });
+    if (result.success) {
+      toast({ title: 'Serviço iniciado!', description: 'Boa sorte na execução.' });
+    }
   };
 
   const handleFinish = async () => {
     if (!canFinish) {
-      toast({ title: 'Campos obrigatórios', description: 'Preencha leitura, lacre e tire pelo menos 1 foto.', variant: 'destructive' });
+      if (isExecuted && !meterReading) {
+        toast({ title: 'Leitura obrigatória', description: 'Informe a leitura do hidrômetro.', variant: 'destructive' });
+        return;
+      }
+      if (isExecuted && photos.length === 0) {
+        toast({ title: 'Foto obrigatória', description: 'Tire pelo menos 1 foto do serviço.', variant: 'destructive' });
+        return;
+      }
+      if (isImpedido && !notes.trim()) {
+        toast({ title: 'Observação obrigatória', description: 'Descreva o motivo do impedimento.', variant: 'destructive' });
+        return;
+      }
       return;
     }
+
     setSubmitting(true);
-    const result = await finishOrder({ resolution_type: resolutionType, meter_reading: meterReading, seal_number: sealNumber, notes });
-    if (result.success) { toast({ title: 'Ordem finalizada!' }); navigate('/technician'); }
+    const result = await finishOrder({
+      resolution_type: resolutionType,
+      meter_reading: meterReading || null,
+      seal_number: sealNumber || null,
+      notes: notes || null,
+    });
+
+    if (result.success) {
+      toast({ title: 'Ordem finalizada!', description: 'Dados salvos com sucesso.' });
+      navigate('/technician');
+    }
     setSubmitting(false);
   };
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    toast({ title: 'Enviando foto...', description: 'Aguarde o upload.' });
     await addPhoto(file);
+    toast({ title: 'Foto adicionada!' });
   };
 
   const openGPS = () => {
-    if (order.client_lat && order.client_long) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${order.client_lat},${order.client_long}`, '_blank');
+    const destination = order.client_lat && order.client_long
+      ? `${order.client_lat},${order.client_long}`
+      : `${order.address}, ${order.number}, ${order.neighborhood}, ${order.municipality}`;
+    
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`, '_blank');
+  };
+
+  const getStatusConfig = (status: ServiceOrderStatus) => {
+    switch (status) {
+      case 'pending':
+        return { label: 'Pendente', className: 'bg-blue-500 text-white' };
+      case 'in_progress':
+        return { label: 'Em Andamento', className: 'bg-yellow-500 text-white' };
+      case 'completed':
+        return { label: 'Concluído', className: 'bg-green-500 text-white' };
+      case 'not_executed':
+        return { label: 'Não Executado', className: 'bg-red-500 text-white' };
+      default:
+        return { label: status, className: 'bg-muted text-muted-foreground' };
     }
   };
 
+  const statusConfig = getStatusConfig(order.status);
+
   return (
-    <div className="min-h-screen bg-background pb-6">
-      <header className="gradient-hero text-primary-foreground sticky top-0 z-50 px-4 py-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/technician')} className="text-primary-foreground"><ArrowLeft className="h-5 w-5" /></Button>
-          <div className="flex-1"><span className="font-mono font-bold">{order.sequencial || order.id}</span></div>
-          <StatusBadge status={order.status} />
+    <div className="min-h-screen bg-muted/30 pb-8">
+      {/* Header */}
+      <header className="gradient-hero text-primary-foreground sticky top-0 z-50 shadow-lg">
+        <div className="px-4 py-4 safe-area-inset">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/technician')}
+              className="text-primary-foreground hover:bg-white/10 -ml-2"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </Button>
+            <div className="flex-1">
+              <p className="text-xs opacity-80">Ordem de Serviço</p>
+              <span className="font-mono text-xl font-bold">
+                #{order.sequencial || order.id.slice(0, 8)}
+              </span>
+            </div>
+            <Badge className={cn('text-xs font-medium px-3 py-1', statusConfig.className)}>
+              {statusConfig.label}
+            </Badge>
+          </div>
         </div>
       </header>
 
       <main className="px-4 py-4 space-y-4">
-        <div className="bg-card rounded-xl p-4 shadow-card space-y-3">
-          <div className="flex items-start gap-2"><MapPin className="h-5 w-5 text-primary mt-0.5" /><div><p className="font-medium">{order.address}, {order.number}</p><p className="text-sm text-muted-foreground">{order.neighborhood} - {order.municipality}</p></div></div>
-          {order.client_lat && order.client_long && (
-            <Button onClick={openGPS} className="w-full" variant="outline"><Navigation className="mr-2 h-4 w-4" />Abrir no GPS</Button>
-          )}
-        </div>
+        {/* Validation Block - Most Important */}
+        <Card className="border-0 shadow-elevated overflow-hidden">
+          <div className="bg-primary/5 px-4 py-2 border-b border-primary/10">
+            <p className="text-xs font-semibold text-primary uppercase tracking-wide">
+              Dados de Conferência
+            </p>
+          </div>
+          <CardContent className="p-4 space-y-4">
+            {/* Address */}
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">
+                  {order.address}, {order.number}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {order.neighborhood} - {order.municipality}
+                </p>
+              </div>
+            </div>
 
+            {/* Enrollment & Meter - Critical for validation */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-muted/50 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Hash className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Matrícula</span>
+                </div>
+                <p className="font-mono font-bold text-foreground text-lg">
+                  {order.enrollment_id || '—'}
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Droplets className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Hidrômetro</span>
+                </div>
+                <p className="font-mono font-bold text-foreground text-lg">
+                  {order.meter_number || '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* GPS Button */}
+            <Button
+              onClick={openGPS}
+              variant="outline"
+              className="w-full h-14 text-base font-medium border-2"
+            >
+              <Navigation className="mr-2 h-5 w-5" />
+              🗺️ Abrir no Maps/Waze
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Status Block - Pending */}
         {order.status === 'pending' && (
-          <Button onClick={handleStart} className="mobile-action-button gradient-primary text-primary-foreground"><Play className="mr-2 h-5 w-5" />INICIAR SERVIÇO</Button>
+          <Button
+            onClick={handleStart}
+            className="mobile-action-button bg-green-600 hover:bg-green-700 text-white shadow-lg"
+          >
+            <Play className="mr-3 h-6 w-6" />
+            INICIAR SERVIÇO
+          </Button>
         )}
 
+        {/* Status Block - Completed */}
+        {(order.status === 'completed' || order.status === 'not_executed') && (
+          <Card className="border-0 shadow-card">
+            <CardContent className="p-4">
+              <div className="text-center py-4">
+                <div className="p-3 bg-green-100 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                  <Check className="h-8 w-8 text-green-600" />
+                </div>
+                <p className="font-semibold text-lg text-foreground">Ordem Finalizada</p>
+                <p className="text-sm text-muted-foreground mt-1">{order.resolution_type}</p>
+                {order.finished_at && (
+                  <div className="flex items-center justify-center gap-2 mt-3 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span className="text-sm">
+                      {new Date(order.finished_at).toLocaleString('pt-BR')}
+                    </span>
+                  </div>
+                )}
+                {order.meter_reading && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Leitura: {order.meter_reading} m³
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Execution Block - In Progress */}
         {order.status === 'in_progress' && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Tipo de Baixa *</Label>
-              <Select value={resolutionType} onValueChange={setResolutionType}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{RESOLUTION_TYPES.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Resolution Type */}
+            <Card className="border-0 shadow-card">
+              <CardContent className="p-4">
+                <Label className="text-sm font-semibold mb-3 block">
+                  Tipo de Baixa <span className="text-destructive">*</span>
+                </Label>
+                <Select value={resolutionType} onValueChange={setResolutionType}>
+                  <SelectTrigger className="h-14 text-base">
+                    <SelectValue placeholder="Selecione o resultado..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {RESOLUTION_TYPES.map((type) => (
+                      <SelectItem key={type} value={type} className="py-3">
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
 
+            {/* Technical Inputs - Only if Executed */}
             {isExecuted && (
-              <>
-                <div className="space-y-2"><Label>Leitura do Hidrômetro *</Label><Input value={meterReading} onChange={(e) => setMeterReading(e.target.value)} placeholder="Ex: 12345" /></div>
-                <div className="space-y-2"><Label>Número do Lacre *</Label><Input value={sealNumber} onChange={(e) => setSealNumber(e.target.value)} placeholder="Ex: ABC123" /></div>
-              </>
+              <Card className="border-0 shadow-card">
+                <CardContent className="p-4 space-y-4">
+                  <div>
+                    <Label className="text-sm font-semibold mb-2 block">
+                      Leitura do Hidrômetro (m³) <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      value={meterReading}
+                      onChange={(e) => setMeterReading(e.target.value)}
+                      placeholder="Ex: 12345"
+                      className="h-14 text-lg font-mono"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-semibold mb-2 block">
+                      Número do Lacre
+                    </Label>
+                    <Input
+                      value={sealNumber}
+                      onChange={(e) => setSealNumber(e.target.value)}
+                      placeholder="Ex: ABC123"
+                      className="h-14 text-lg font-mono"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
-            <div className="space-y-2">
-              <Label>Fotos {isExecuted && '*'}</Label>
-              <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoCapture} className="hidden" />
-              <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="w-full"><Camera className="mr-2 h-4 w-4" />Tirar Foto</Button>
-              {photos.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mt-2">{photos.map((p) => <img key={p.id} src={p.url} alt="" className="rounded-lg aspect-square object-cover" />)}</div>
-              )}
-            </div>
+            {/* Photo Evidence */}
+            <Card className="border-0 shadow-card">
+              <CardContent className="p-4">
+                <Label className="text-sm font-semibold mb-3 block">
+                  Evidências {isExecuted && <span className="text-destructive">*</span>}
+                </Label>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoCapture}
+                  className="hidden"
+                />
+                
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="outline"
+                  className="w-full h-14 text-base font-medium border-2 border-dashed"
+                >
+                  <Camera className="mr-2 h-5 w-5" />
+                  📷 Adicionar Foto
+                </Button>
 
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    {photos.map((p) => (
+                      <div key={p.id} className="relative aspect-square">
+                        <img
+                          src={p.url}
+                          alt="Evidência"
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Notes Dialog */}
             <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
-              <DialogTrigger asChild><Button variant="outline" className="w-full"><FileText className="mr-2 h-4 w-4" />Anotações</Button></DialogTrigger>
-              <DialogContent><DialogHeader><DialogTitle>Anotações</DialogTitle></DialogHeader><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Observações..." /><Button onClick={() => setShowNotesDialog(false)}>Salvar</Button></DialogContent>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full h-14 text-base font-medium border-2",
+                    isImpedido && !notes.trim() && "border-destructive text-destructive"
+                  )}
+                >
+                  <FileText className="mr-2 h-5 w-5" />
+                  📝 {notes ? 'Editar Observação' : 'Adicionar Observação'}
+                  {isImpedido && <span className="ml-1 text-destructive">*</span>}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Observações</DialogTitle>
+                </DialogHeader>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={6}
+                  placeholder="Descreva detalhes importantes, impedimentos ou observações..."
+                  className="text-base"
+                />
+                <DialogFooter>
+                  <Button onClick={() => setShowNotesDialog(false)} className="w-full">
+                    Salvar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
             </Dialog>
 
-            <Button onClick={handleFinish} disabled={!canFinish || submitting} className="mobile-action-button bg-status-completed text-primary-foreground">
-              {submitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Check className="mr-2 h-5 w-5" />}FINALIZAR
+            {/* Finish Button */}
+            <Button
+              onClick={handleFinish}
+              disabled={!canFinish || submitting}
+              className={cn(
+                "mobile-action-button shadow-lg",
+                canFinish 
+                  ? "bg-red-600 hover:bg-red-700 text-white" 
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {submitting ? (
+                <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+              ) : (
+                <Check className="mr-3 h-6 w-6" />
+              )}
+              FINALIZAR OS
             </Button>
           </div>
-        )}
-
-        {(order.status === 'completed' || order.status === 'not_executed') && (
-          <div className="bg-muted rounded-xl p-4 text-center"><p className="font-medium">Ordem já finalizada</p><p className="text-sm text-muted-foreground">{order.resolution_type}</p></div>
         )}
       </main>
     </div>

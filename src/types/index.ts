@@ -35,6 +35,8 @@ export interface ServiceOrder {
   seal_number: string | null;
   resolution_type: string | null;
   notes: string | null;
+  enrollment_id: string | null;
+  meter_number: string | null;
   created_at?: string;
   updated_at?: string;
   profiles?: Profile | null;
@@ -63,6 +65,8 @@ export interface ExcelRow {
   Latitude?: number | string;
   Longitude?: number | string;
   Matrícula?: string;
+  Hidrômetro?: string;
+  'HD Vinculado'?: string;
   // Campos legados (compatibilidade)
   SEQUENCIAL?: string;
   SERVICO?: string;
