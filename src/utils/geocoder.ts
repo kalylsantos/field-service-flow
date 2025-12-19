@@ -21,11 +21,33 @@ const delay = (ms: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, ms));
 
 /**
+ * Normalizes address by expanding common abbreviations
+ */
+function normalizeAddress(address: string): string {
+  if (!address) return '';
+  
+  return address
+    .replace(/^R\.\s*/i, 'Rua ')
+    .replace(/^AV\.\s*/i, 'Avenida ')
+    .replace(/^B\.\s*/i, 'Beco ')
+    .replace(/^VIA\s*/i, 'Via ')
+    .replace(/^TV\.\s*/i, 'Travessa ')
+    .replace(/^JORN\s*/i, 'Jornalista ')
+    .replace(/^DEP\s*/i, 'Deputado ')
+    .replace(/^DR\.\s*/i, 'Doutor ')
+    .replace(/^PROF\.\s*/i, 'Professor ')
+    .replace(/^SEN\.\s*/i, 'Senador ')
+    .replace(/^VER\.\s*/i, 'Vereador ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Builds a query string from order address components
  */
 export function buildAddressQuery(order: ServiceOrder): string {
   const parts = [
-    order.address,
+    normalizeAddress(order.address || ''),
     order.number,
     order.neighborhood,
     order.municipality,
@@ -33,6 +55,31 @@ export function buildAddressQuery(order: ServiceOrder): string {
   ].filter(Boolean);
   
   return parts.join(', ');
+}
+
+/**
+ * Builds alternative query formats for fallback attempts
+ */
+function buildAlternativeQueries(order: ServiceOrder): string[] {
+  const queries: string[] = [];
+  
+  // Try without street number
+  queries.push([
+    normalizeAddress(order.address || ''),
+    order.neighborhood,
+    order.municipality,
+    'Brasil'
+  ].filter(Boolean).join(', '));
+  
+  // Try just neighborhood and city
+  queries.push([
+    order.neighborhood,
+    order.municipality,
+    'Santa Catarina',
+    'Brasil'
+  ].filter(Boolean).join(', '));
+  
+  return queries;
 }
 
 /**
@@ -72,6 +119,30 @@ export async function geocodeAddress(query: string): Promise<GeocodingResult | n
 }
 
 /**
+ * Geocodes a single address with fallback attempts
+ */
+async function geocodeWithFallback(order: ServiceOrder): Promise<GeocodingResult | null> {
+  // Try primary query first
+  const primaryQuery = buildAddressQuery(order);
+  let result = await geocodeAddress(primaryQuery);
+  
+  if (result) return result;
+  
+  // Try alternative queries
+  const alternatives = buildAlternativeQueries(order);
+  for (const query of alternatives) {
+    await delay(RATE_LIMIT_DELAY);
+    result = await geocodeAddress(query);
+    if (result) {
+      console.log(`Fallback geocoding succeeded for ${order.id} with query: ${query}`);
+      return result;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Geocodes multiple orders with rate limiting
  * Returns orders with updated coordinates
  */
@@ -107,7 +178,8 @@ export async function geocodeOrders(
       await delay(RATE_LIMIT_DELAY);
     }
     
-    const result = await geocodeAddress(query);
+    // Try geocoding with fallback
+    const result = await geocodeWithFallback(order);
     
     if (result) {
       results.set(order.id, result);
