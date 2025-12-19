@@ -3,9 +3,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useServiceOrders } from '@/hooks/useServiceOrders';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FullPageLoading } from '@/components/LoadingSpinner';
+import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Droplets, LogOut, RefreshCw, MapPin, FileText } from 'lucide-react';
+import { Droplets, RefreshCw, MapPin, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function TechnicianDashboard() {
@@ -35,8 +36,10 @@ export default function TechnicianDashboard() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="icon" onClick={refetch} className="text-primary-foreground"><RefreshCw className="h-5 w-5" /></Button>
-              <Button variant="ghost" size="icon" onClick={signOut} className="text-primary-foreground"><LogOut className="h-5 w-5" /></Button>
+              <Button variant="ghost" size="icon" onClick={refetch} className="text-primary-foreground">
+                <RefreshCw className="h-5 w-5" />
+              </Button>
+              <UserMenu />
             </div>
           </div>
         </div>
