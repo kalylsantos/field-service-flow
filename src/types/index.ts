@@ -50,14 +50,27 @@ export interface Photo {
 }
 
 export interface ExcelRow {
-  SEQUENCIAL: string;
-  PROTOCOLO: string;
-  SERVICO: string;
-  ENDERECO: string;
-  NUMERO: string;
-  BAIRRO: string;
-  MUNICIPIO: string;
-  DATA: string;
+  // Campos conforme planilha real
+  PROTOCOLO?: string;
+  Sequencial?: string;
+  Serviço?: string;
+  'Descrição Serviço'?: string;
+  Endereço?: string;
+  Número?: string;
+  Bairro?: string;
+  Município?: string;
+  'Data Programada'?: string;
+  Latitude?: number | string;
+  Longitude?: number | string;
+  Matrícula?: string;
+  // Campos legados (compatibilidade)
+  SEQUENCIAL?: string;
+  SERVICO?: string;
+  ENDERECO?: string;
+  NUMERO?: string;
+  BAIRRO?: string;
+  MUNICIPIO?: string;
+  DATA?: string;
   LATITUDE?: number;
   LONGITUDE?: number;
 }
