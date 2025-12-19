@@ -194,22 +194,31 @@ export function useTechnicians() {
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
-        const { data, error } = await supabase
+        // First get all technician user_ids
+        const { data: rolesData, error: rolesError } = await supabase
           .from('user_roles')
-          .select(`
-            user_id,
-            role,
-            profiles:user_id(id, email, full_name)
-          `)
+          .select('user_id')
           .eq('role', 'technician');
 
-        if (error) throw error;
+        if (rolesError) throw rolesError;
 
-        const techList = (data || [])
-          .filter((item: any) => item.profiles)
-          .map((item: any) => item.profiles as Profile);
+        const technicianIds = (rolesData || []).map((r) => r.user_id);
 
-        setTechnicians(techList);
+        if (technicianIds.length === 0) {
+          setTechnicians([]);
+          setLoading(false);
+          return;
+        }
+
+        // Then fetch profiles for those user_ids
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', technicianIds);
+
+        if (profilesError) throw profilesError;
+
+        setTechnicians((profilesData || []) as Profile[]);
       } catch (error: any) {
         console.error('Error fetching technicians:', error);
         toast({
