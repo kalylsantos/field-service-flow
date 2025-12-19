@@ -92,6 +92,28 @@ export function useExcelImport() {
     setImporting(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get next batch number for today
+      const today = new Date().toISOString().split('T')[0];
+      const { data: batchData } = await supabase.rpc('get_next_batch_number', { p_date: today });
+      const batchNumber = batchData || 1;
+
+      // Create import log entry
+      const { data: importLog, error: logError } = await supabase
+        .from('import_logs')
+        .insert({
+          imported_by: user?.id,
+          orders_count: data.length,
+          batch_number: batchNumber,
+          import_date: today,
+        })
+        .select()
+        .single();
+
+      if (logError) throw logError;
+
       const ordersToInsert = data.map((row) => ({
         id: row.SEQUENCIAL || row.PROTOCOLO || `OS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         sequencial: row.SEQUENCIAL || null,
@@ -105,6 +127,7 @@ export function useExcelImport() {
         client_lat: row.LATITUDE || null,
         client_long: row.LONGITUDE || null,
         status: 'pending' as const,
+        import_log_id: importLog.id,
       }));
 
       const { data: insertedData, error } = await supabase
@@ -114,13 +137,14 @@ export function useExcelImport() {
 
       if (error) throw error;
 
+      const formattedDate = new Date().toLocaleDateString('pt-BR');
       toast({
         title: 'Importação concluída!',
-        description: `${ordersToInsert.length} ordens importadas com sucesso.`,
+        description: `${ordersToInsert.length} ordens importadas. Lote: ${formattedDate} - ${batchNumber}`,
       });
 
       setParsedData([]);
-      return { success: true, count: ordersToInsert.length };
+      return { success: true, count: ordersToInsert.length, importLogId: importLog.id };
     } catch (error: any) {
       console.error('Import error:', error);
       toast({

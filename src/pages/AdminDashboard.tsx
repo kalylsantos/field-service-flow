@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ExcelImport } from '@/components/admin/ExcelImport';
 import { OrdersTable } from '@/components/admin/OrdersTable';
 import { TeamAssignment } from '@/components/admin/TeamAssignment';
+import { ImportLogsManager } from '@/components/admin/ImportLogsManager';
 import { StatusBadge } from '@/components/StatusBadge';
 import { FullPageLoading } from '@/components/LoadingSpinner';
 import { UserMenu } from '@/components/UserMenu';
@@ -118,6 +119,7 @@ export default function AdminDashboard() {
 
           <div className="space-y-6">
             <ExcelImport onImportComplete={refetch} />
+            <ImportLogsManager selectedOrders={selectedOrders} onDeleteComplete={() => { setSelectedOrders([]); refetch(); }} />
             <TeamAssignment selectedOrders={selectedOrders} pendingOrders={orders} onAssignmentComplete={() => { setSelectedOrders([]); refetch(); }} />
           </div>
         </div>
