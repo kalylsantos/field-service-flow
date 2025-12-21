@@ -6,115 +6,117 @@
 
 @layer base {
   :root {
-    /* Water utility theme - Professional blues */
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    /* High-contrast dark theme - Optimized for outdoor/sunlight visibility */
+    --background: 220 20% 8%;
+    --foreground: 60 10% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card: 220 18% 12%;
+    --card-foreground: 60 10% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 60 10% 95%;
 
-    /* Deep blue primary - water utility branding */
-    --primary: 210 85% 35%;
-    --primary-foreground: 0 0% 100%;
+    /* Vibrant amber/orange primary - Maximum visibility in sunlight */
+    --primary: 38 95% 55%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 210 15% 92%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 60 10% 90%;
 
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 205 90% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 175 85% 45%;
+    --accent-foreground: 220 20% 8%;
 
-    --destructive: 0 75% 55%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 60 10% 95%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 85% 35%;
+    --border: 220 15% 22%;
+    --input: 220 15% 18%;
+    --ring: 38 95% 55%;
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
 
-    /* Status colors */
-    --status-pending: 210 85% 55%;
-    --status-pending-bg: 210 85% 95%;
-    --status-in-progress: 45 95% 50%;
-    --status-in-progress-bg: 45 95% 92%;
-    --status-completed: 145 70% 40%;
-    --status-completed-bg: 145 70% 92%;
-    --status-not-executed: 0 75% 55%;
-    --status-not-executed-bg: 0 75% 95%;
+    /* Status colors - High contrast for outdoor visibility */
+    --status-pending: 210 90% 60%;
+    --status-pending-bg: 210 90% 15%;
+    --status-in-progress: 38 95% 55%;
+    --status-in-progress-bg: 38 95% 12%;
+    --status-completed: 155 85% 50%;
+    --status-completed-bg: 155 85% 12%;
+    --status-not-executed: 0 85% 55%;
+    --status-not-executed-bg: 0 85% 12%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210, 85%, 35%) 0%, hsl(205, 90%, 45%) 100%);
-    --gradient-hero: linear-gradient(180deg, hsl(210, 85%, 35%) 0%, hsl(210, 75%, 25%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(210, 20%, 98%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(38, 95%, 55%) 0%, hsl(28, 90%, 50%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(220, 20%, 8%) 0%, hsl(220, 25%, 5%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220, 18%, 14%) 0%, hsl(220, 18%, 10%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(175, 85%, 45%) 0%, hsl(165, 80%, 40%) 100%);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1), 0 2px 4px -2px hsl(215 25% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1), 0 4px 6px -4px hsl(215 25% 15% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(215 25% 15% / 0.1), 0 8px 10px -6px hsl(215 25% 15% / 0.1);
+    /* Shadows - Subtle glow effects */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.5), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.5), 0 8px 10px -6px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 20px hsl(38 95% 55% / 0.3);
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 20% 6%;
+    --sidebar-foreground: 60 10% 90%;
+    --sidebar-primary: 38 95% 55%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 60 10% 90%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 38 95% 55%;
   }
 
   .dark {
-    --background: 215 25% 10%;
-    --foreground: 210 20% 98%;
+    --background: 220 20% 8%;
+    --foreground: 60 10% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 20% 98%;
+    --card: 220 18% 12%;
+    --card-foreground: 60 10% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 60 10% 95%;
 
-    --primary: 205 90% 55%;
-    --primary-foreground: 215 25% 10%;
+    --primary: 38 95% 55%;
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 215 20% 20%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 60 10% 90%;
 
-    --muted: 215 20% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 205 90% 50%;
-    --accent-foreground: 215 25% 10%;
+    --accent: 175 85% 45%;
+    --accent-foreground: 220 20% 8%;
 
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 60 10% 95%;
 
-    --border: 215 20% 22%;
-    --input: 215 20% 22%;
-    --ring: 205 90% 55%;
+    --border: 220 15% 22%;
+    --input: 220 15% 18%;
+    --ring: 38 95% 55%;
 
-    --status-pending: 210 85% 60%;
-    --status-pending-bg: 210 85% 20%;
-    --status-in-progress: 45 95% 55%;
-    --status-in-progress-bg: 45 95% 18%;
-    --status-completed: 145 70% 45%;
-    --status-completed-bg: 145 70% 18%;
-    --status-not-executed: 0 75% 55%;
-    --status-not-executed-bg: 0 75% 18%;
+    --status-pending: 210 90% 60%;
+    --status-pending-bg: 210 90% 15%;
+    --status-in-progress: 38 95% 55%;
+    --status-in-progress-bg: 38 95% 12%;
+    --status-completed: 155 85% 50%;
+    --status-completed-bg: 155 85% 12%;
+    --status-not-executed: 0 85% 55%;
+    --status-not-executed-bg: 0 85% 12%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 20% 6%;
+    --sidebar-foreground: 60 10% 90%;
+    --sidebar-primary: 38 95% 55%;
+    --sidebar-primary-foreground: 220 20% 8%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 60 10% 90%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 38 95% 55%;
   }
 }
 
