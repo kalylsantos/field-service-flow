@@ -147,7 +147,7 @@ export function AdminMap() {
                                 {selectedRoute.length > 0 && (
                                     <>
                                         <Polyline
-                                            positions={selectedRoute.map(order => [order.client_lat!, order.client_long!])}
+                                            positions={selectedRoute.map(order => [order.client_lat!, order.client_long!] as [number, number])}
                                             color="#3b82f6"
                                             weight={4}
                                             opacity={0.6}
