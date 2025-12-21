@@ -15,6 +15,11 @@ import { UserMenu } from '@/components/UserMenu';
 import { Droplets, RefreshCw, Smartphone, LogOut } from 'lucide-react';
 import { ServiceOrderStatus } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { exportOrdersToCsv } from '@/utils/ExportUtils';
+import { Download } from 'lucide-react';
+import { useImportLogs } from '@/hooks/useImportLogs';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
@@ -22,8 +27,11 @@ export default function AdminDashboard() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [techFilter, setTechFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [batchFilter, setBatchFilter] = useState<string>('all');
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const { technicians } = useTechnicians();
+  const { logs: importLogs } = useImportLogs();
   const navigate = useNavigate();
 
   if (loading) return <FullPageLoading />;
@@ -31,8 +39,16 @@ export default function AdminDashboard() {
   const filteredOrders = orders.filter((order) => {
     if (statusFilter !== 'all' && order.status !== statusFilter) return false;
     if (techFilter !== 'all' && order.assigned_to !== techFilter) return false;
+    if (dateFilter !== 'all' && order.scheduled_date !== dateFilter) return false;
+    if (batchFilter !== 'all' && order.import_log_id !== batchFilter) return false;
     return true;
   });
+
+  const availableDates = Array.from(new Set(orders.map(o => o.scheduled_date))).filter(Boolean).sort();
+
+  const handleExport = async () => {
+    await exportOrdersToCsv(filteredOrders);
+  };
 
   const handleSelectOrder = (orderId: string) => {
     setSelectedOrders((prev) =>
@@ -60,12 +76,32 @@ export default function AdminDashboard() {
       <header className="gradient-hero text-primary-foreground sticky top-0 z-50 shadow-lg">
         <div className="px-4 py-5 safe-area-inset">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Droplets className="h-8 w-8" />
-              <div>
-                <h1 className="text-xl font-bold">Gestão de Campo</h1>
-                <p className="text-sm opacity-80">Painel Administrativo</p>
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-3">
+                <Droplets className="h-8 w-8" />
+                <div>
+                  <h1 className="text-xl font-bold">Gestão de Campo</h1>
+                  <p className="text-sm opacity-80">Painel Administrativo</p>
+                </div>
               </div>
+
+              <nav className="hidden md:flex items-center gap-1 bg-white/10 p-1 rounded-lg backdrop-blur-sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20 bg-white/20 pointer-events-none"
+                >
+                  Gestão de Campo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => navigate('/admin/batches')}
+                >
+                  Análise de Lotes
+                </Button>
+              </nav>
             </div>
             <div className="flex items-center gap-2">
               <UserMenu />
@@ -107,7 +143,29 @@ export default function AdminDashboard() {
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {/* Filters */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap items-center">
+              <Select value={dateFilter} onValueChange={setDateFilter}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Dia" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Dias</SelectItem>
+                  {availableDates.map((date) => (
+                    <SelectItem key={date} value={date!}>
+                      {format(parseISO(date!), 'dd/MM/yyyy', { locale: ptBR })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={batchFilter} onValueChange={setBatchFilter}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="Lote" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Lotes</SelectItem>
+                  {importLogs.map((log) => (
+                    <SelectItem key={log.id} value={log.id}>{log.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
@@ -118,6 +176,7 @@ export default function AdminDashboard() {
                   <SelectItem value="not_executed">Não Executado</SelectItem>
                 </SelectContent>
               </Select>
+
               <Select value={techFilter} onValueChange={setTechFilter}>
                 <SelectTrigger className="w-48"><SelectValue placeholder="Técnico" /></SelectTrigger>
                 <SelectContent>
@@ -127,7 +186,15 @@ export default function AdminDashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="icon" onClick={refetch}><RefreshCw className="h-4 w-4" /></Button>
+
+              <Button variant="outline" size="icon" onClick={refetch} title="Atualizar">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+
+              <Button variant="premium" onClick={handleExport} className="ml-auto">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
             </div>
 
             <OrdersTable orders={filteredOrders} selectedOrders={selectedOrders} onSelectOrder={handleSelectOrder} onSelectAll={handleSelectAll} />

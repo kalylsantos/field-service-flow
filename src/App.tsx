@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import BatchAnalysis from "./pages/BatchAnalysis";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import OrderExecution from "./pages/OrderExecution";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,15 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/batches"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <BatchAnalysis />
                 </ProtectedRoute>
               }
             />

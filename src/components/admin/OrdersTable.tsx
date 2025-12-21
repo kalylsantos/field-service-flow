@@ -37,13 +37,13 @@ export function OrdersTable({
         </span>
       </div>
 
-      <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto">
+      <div className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto p-1 -m-1">
         {orders.map((order) => (
           <Card
             key={order.id}
             className={cn(
               'border-0 shadow-card cursor-pointer transition-all hover:scale-[1.01]',
-              selectedOrders.includes(order.id) && 'ring-2 ring-primary'
+              selectedOrders.includes(order.id) && 'ring-2 ring-inset ring-primary'
             )}
           >
             <CardContent className="p-4">

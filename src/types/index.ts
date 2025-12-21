@@ -37,6 +37,7 @@ export interface ServiceOrder {
   notes: string | null;
   enrollment_id: string | null;
   meter_number: string | null;
+  import_log_id: string | null;
   created_at?: string;
   updated_at?: string;
   profiles?: Profile | null;
