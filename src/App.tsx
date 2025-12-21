@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import OrderExecution from "./pages/OrderExecution";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -23,9 +24,34 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/technician" element={<TechnicianDashboard />} />
-            <Route path="/technician/order/:orderId" element={<OrderExecution />} />
+
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/technician"
+              element={
+                <ProtectedRoute allowedRoles={['technician']}>
+                  <TechnicianDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/technician/order/:orderId"
+              element={
+                <ProtectedRoute allowedRoles={['technician']}>
+                  <OrderExecution />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

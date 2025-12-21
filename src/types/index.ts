@@ -85,6 +85,8 @@ export const RESOLUTION_TYPES = [
   'Não Localizado',
   'Impedido pelo Cliente',
   'Já estava cortado',
+  'Precisa de outra visita',
+  'Escavação feita e não encontrado',
 ] as const;
 
 export type ResolutionType = typeof RESOLUTION_TYPES[number];

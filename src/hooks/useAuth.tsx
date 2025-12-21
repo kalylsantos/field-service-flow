@@ -48,14 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id).then(setUserRole);
-          }, 0);
+          fetchUserRole(session.user.id).then((role) => {
+            setUserRole(role);
+            setLoading(false);
+          });
         } else {
           setUserRole(null);
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
@@ -64,9 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchUserRole(session.user.id).then(setUserRole);
+        fetchUserRole(session.user.id).then((role) => {
+          setUserRole(role);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();

@@ -42,6 +42,25 @@ export function useServiceOrders(assignedToId?: string) {
 
   useEffect(() => {
     fetchOrders();
+
+    const channel = supabase
+      .channel('service_orders_list_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_orders'
+        },
+        () => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [assignedToId]);
 
   return { orders, loading, refetch: fetchOrders };
@@ -92,6 +111,30 @@ export function useServiceOrder(orderId: string) {
   useEffect(() => {
     if (orderId) {
       fetchOrder();
+
+      const channel = supabase
+        .channel(`service_order_${orderId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'service_orders',
+            filter: `id=eq.${orderId}`
+          },
+          (payload) => {
+            if (payload.eventType === 'UPDATE') {
+              setOrder((prev) => prev ? { ...prev, ...payload.new as any } : null);
+            } else {
+              fetchOrder();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [orderId]);
 
@@ -146,7 +189,7 @@ export function useServiceOrder(orderId: string) {
   const addPhoto = async (file: File, gpsLat?: number, gpsLong?: number) => {
     try {
       const fileName = `${orderId}/${Date.now()}-${file.name}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('service-photos')
         .upload(fileName, file);

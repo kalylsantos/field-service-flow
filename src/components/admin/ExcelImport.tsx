@@ -13,7 +13,7 @@ interface ExcelImportProps {
 export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  
+
   const {
     parseExcel,
     geocodeData,
@@ -59,7 +59,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   });
 
   return (
-    <Card className="shadow-card">
+    <Card className="border-0 shadow-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -141,7 +141,7 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
                     const bairro = row.Bairro || row.BAIRRO || '';
                     const lat = row.Latitude || row.LATITUDE;
                     const lon = row.Longitude || row.LONGITUDE;
-                    
+
                     return (
                       <TableRow key={i}>
                         <TableCell className="font-mono text-sm">{seq}</TableCell>

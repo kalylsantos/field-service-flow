@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Droplets, RefreshCw, MapPin, Wrench, Clock, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ServiceOrderStatus } from '@/types';
+import { LocationTracker } from '@/components/LocationTracker';
 
 export default function TechnicianDashboard() {
   const { user, signOut } = useAuth();
@@ -104,10 +105,10 @@ export default function TechnicianDashboard() {
       {/* Task List */}
       <main className="px-4 py-4 space-y-3">
         <h2 className="text-lg font-semibold text-foreground">Minhas Tarefas</h2>
-        
+
         {orders.map((order) => {
           const statusConfig = getStatusConfig(order.status);
-          
+
           return (
             <Card
               key={order.id}
@@ -167,6 +168,7 @@ export default function TechnicianDashboard() {
           </div>
         )}
       </main>
+      <LocationTracker />
     </div>
   );
 }

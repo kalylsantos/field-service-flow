@@ -1,5 +1,6 @@
 import { ServiceOrderStatus, STATUS_LABELS } from '@/types';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface StatusBadgeProps {
   status: ServiceOrderStatus;
@@ -7,16 +8,16 @@ interface StatusBadgeProps {
 }
 
 const statusClasses: Record<ServiceOrderStatus, string> = {
-  pending: 'status-pending',
-  in_progress: 'status-in-progress',
-  completed: 'status-completed',
-  not_executed: 'status-not-executed',
+  pending: 'bg-blue-500 text-white hover:bg-blue-600',
+  in_progress: 'bg-yellow-500 text-white hover:bg-yellow-600',
+  completed: 'bg-green-500 text-white hover:bg-green-600',
+  not_executed: 'bg-red-500 text-white hover:bg-red-600',
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
-    <span className={cn('status-badge', statusClasses[status], className)}>
+    <Badge className={cn('text-xs font-medium px-3 py-1', statusClasses[status], className)}>
       {STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 }

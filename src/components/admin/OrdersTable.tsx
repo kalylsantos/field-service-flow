@@ -42,7 +42,7 @@ export function OrdersTable({
           <Card
             key={order.id}
             className={cn(
-              'cursor-pointer transition-all hover:shadow-md',
+              'border-0 shadow-card cursor-pointer transition-all hover:scale-[1.01]',
               selectedOrders.includes(order.id) && 'ring-2 ring-primary'
             )}
           >

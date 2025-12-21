@@ -9,14 +9,18 @@ const Index = () => {
 
   useEffect(() => {
     if (loading) return;
-    
+
+    console.log('Index Redirect Debug:', { user: user?.email, role: userRole });
+
     if (!user) {
       navigate('/auth');
     } else if (userRole === 'admin') {
       navigate('/admin');
-    } else {
+    } else if (userRole === 'technician') {
       navigate('/technician');
     }
+    // If user is authenticated but has no role yet (or invalid), stay on loading or handle error
+    // For now, we wait. ProtectedRoute handles the nuances for direct access.
   }, [user, userRole, loading, navigate]);
 
   return <FullPageLoading />;

@@ -12,15 +12,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { FullPageLoading } from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { RESOLUTION_TYPES, ServiceOrderStatus } from '@/types';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Navigation, 
-  Camera, 
-  FileText, 
-  Loader2, 
-  Play, 
-  Check, 
+import {
+  ArrowLeft,
+  MapPin,
+  Navigation,
+  Camera,
+  FileText,
+  Loader2,
+  Play,
+  Check,
   Droplets,
   Hash,
   Calendar,
@@ -61,8 +61,11 @@ export default function OrderExecution() {
   }
 
   const isExecuted = resolutionType.startsWith('Executado');
-  const isImpedido = resolutionType.includes('Impedido') || resolutionType.includes('Não Localizado');
-  
+  const isImpedido = resolutionType.includes('Impedido') ||
+    resolutionType.includes('Não Localizado') ||
+    resolutionType.includes('Precisa') ||
+    resolutionType.includes('Escavação feita');
+
   const canFinish = (() => {
     if (!resolutionType) return false;
     if (isExecuted) return meterReading && photos.length > 0;
@@ -121,7 +124,7 @@ export default function OrderExecution() {
     const destination = order.client_lat && order.client_long
       ? `${order.client_lat},${order.client_long}`
       : `${order.address}, ${order.number}, ${order.neighborhood}, ${order.municipality}`;
-    
+
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`, '_blank');
   };
 
@@ -328,7 +331,7 @@ export default function OrderExecution() {
                 <Label className="text-sm font-semibold mb-3 block">
                   Evidências {isExecuted && <span className="text-destructive">*</span>}
                 </Label>
-                
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -337,7 +340,7 @@ export default function OrderExecution() {
                   onChange={handlePhotoCapture}
                   className="hidden"
                 />
-                
+
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   variant="outline"
@@ -403,8 +406,8 @@ export default function OrderExecution() {
               disabled={!canFinish || submitting}
               className={cn(
                 "mobile-action-button shadow-lg",
-                canFinish 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
+                canFinish
+                  ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-muted text-muted-foreground"
               )}
             >
