@@ -44,7 +44,7 @@ export default function BatchAnalysis() {
     return (
         <div className="min-h-screen bg-muted/30 pb-6">
             <header className="gradient-hero text-primary-foreground sticky top-0 z-50 shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between safe-area-inset">
                     <div className="flex items-center gap-8">
                         <div className="flex items-center gap-2">
                             <Droplets className="h-8 w-8" />

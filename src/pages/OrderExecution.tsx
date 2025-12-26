@@ -115,9 +115,39 @@ export default function OrderExecution() {
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    toast({ title: 'Enviando foto...', description: 'Aguarde o upload.' });
-    await addPhoto(file);
-    toast({ title: 'Foto adicionada!' });
+
+    setSubmitting(true);
+    toast({ title: 'Processando foto...', description: 'Adicionando marca d\'água...' });
+
+    try {
+      // Get current GPS location for watermarking
+      let lat: number | undefined;
+      let lng: number | undefined;
+
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          });
+        });
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+      } catch (err) {
+        console.warn('Could not get GPS for photo:', err);
+      }
+
+      await addPhoto(file, lat, lng);
+      toast({ title: 'Foto adicionada!' });
+    } catch (error: any) {
+      console.error('Photo capture error:', error);
+      toast({ title: 'Erro ao salvar foto', description: error.message, variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const openGPS = () => {
@@ -352,13 +382,23 @@ export default function OrderExecution() {
 
                 {photos.length > 0 && (
                   <div className="grid grid-cols-3 gap-2 mt-4">
-                    {photos.map((p) => (
+                    {photos.map((p: any) => (
                       <div key={p.id} className="relative aspect-square">
                         <img
                           src={p.url}
                           alt="Evidência"
-                          className="w-full h-full object-cover rounded-lg"
+                          className={cn(
+                            "w-full h-full object-cover rounded-lg",
+                            p.is_local && "opacity-70 border-2 border-yellow-500"
+                          )}
                         />
+                        {p.is_local && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Badge variant="secondary" className="bg-yellow-500/80 text-white text-[10px] px-1">
+                              Pendente Sync
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceOrder, ServiceOrderStatus, Profile } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { addWatermarkToImage } from '@/lib/imageUtils';
+import { savePhotoToFilesystem, saveOfflineTask, getOfflineTasks, removeOfflineTask } from '@/lib/offlineStorage';
 
 export function useServiceOrders(assignedToId?: string) {
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -42,6 +44,7 @@ export function useServiceOrders(assignedToId?: string) {
 
   useEffect(() => {
     fetchOrders();
+    syncOfflineData(); // Check for offline data to sync
 
     const channel = supabase
       .channel('service_orders_list_changes')
@@ -63,7 +66,35 @@ export function useServiceOrders(assignedToId?: string) {
     };
   }, [assignedToId]);
 
-  return { orders, loading, refetch: fetchOrders };
+  const syncOfflineData = async () => {
+    const tasks = getOfflineTasks();
+    if (tasks.length === 0) return;
+
+    console.log(`Found ${tasks.length} offline tasks to sync`);
+
+    for (const task of tasks) {
+      try {
+        const { error } = await supabase
+          .from('service_orders')
+          .update(task.data)
+          .eq('id', task.orderId);
+
+        if (!error) {
+          removeOfflineTask(task.orderId);
+          console.log(`Task ${task.orderId} synced successfully`);
+        }
+      } catch (err) {
+        console.error(`Failed to sync task ${task.orderId}:`, err);
+      }
+    }
+
+    if (tasks.length > 0) {
+      toast({ title: 'Sincronização concluída', description: 'Dados offline foram enviados.' });
+      fetchOrders();
+    }
+  };
+
+  return { orders, loading, refetch: fetchOrders, syncOfflineData };
 }
 
 export function useServiceOrder(orderId: string) {
@@ -175,30 +206,90 @@ export function useServiceOrder(orderId: string) {
   }) => {
     const isExecuted = data.resolution_type.startsWith('Executado');
     const status: ServiceOrderStatus = isExecuted ? 'completed' : 'not_executed';
+    const finished_at = new Date().toISOString();
 
-    return updateOrder({
+    const updates = {
       status,
-      finished_at: new Date().toISOString(),
+      finished_at,
       resolution_type: data.resolution_type,
       meter_reading: data.meter_reading || null,
       seal_number: data.seal_number || null,
       notes: data.notes || null,
-    });
+    };
+
+    // Attempt to update online first
+    const result = await updateOrder(updates);
+
+    if (!result.success) {
+      // If offline or error, save locally
+      saveOfflineTask({
+        orderId,
+        data: updates,
+        status: 'pending',
+        timestamp: finished_at,
+      });
+      toast({
+        title: 'Modo Offline',
+        description: 'Ordem salva localmente e será sincronizada quando houver conexão.',
+      });
+      return { success: true, offline: true };
+    }
+
+    return result;
   };
 
   const addPhoto = async (file: File, gpsLat?: number, gpsLong?: number) => {
     try {
-      const fileName = `${orderId}/${Date.now()}-${file.name}`;
+      if (!order) throw new Error('Order not loaded');
 
+      // 1. Add Watermark
+      const now = new Date();
+      const watermarkedBlob = await addWatermarkToImage(file, {
+        orderNumber: order.sequencial || order.id.slice(0, 8),
+        date: now.toLocaleDateString('pt-BR'),
+        time: now.toLocaleTimeString('pt-BR'),
+        gps: gpsLat && gpsLong ? { lat: gpsLat, lng: gpsLong } : undefined,
+      });
+
+      const watermarkedFile = new File([watermarkedBlob], file.name, { type: 'image/jpeg' });
+      const photoCount = photos.length + 1;
+      const fileName = `${order.sequencial || order.id.slice(0, 8)} (${photoCount}).jpg`;
+
+      // 2. Save locally first (Capacitor Filesystem)
+      const localUri = await savePhotoToFilesystem(
+        order.sequencial || order.id.slice(0, 8),
+        fileName,
+        watermarkedBlob
+      );
+
+      // 3. Attempt upload to Supabase
+      const storagePath = `${orderId}/${Date.now()}-${fileName}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('service-photos')
-        .upload(fileName, file);
+        .upload(storagePath, watermarkedFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.warn('Upload failed, photo saved locally:', uploadError);
+        // Add to local photos state so user sees it
+        const localPhoto = {
+          id: `local-${Date.now()}`,
+          url: URL.createObjectURL(watermarkedBlob),
+          taken_at: now.toISOString(),
+          is_local: true,
+          local_uri: localUri
+        };
+        setPhotos((prev) => [localPhoto as any, ...prev]);
+
+        toast({
+          title: 'Foto salva localmente',
+          description: 'A foto será enviada quando você estiver online.',
+        });
+        return { success: true, offline: true };
+      }
 
       const { data: urlData } = supabase.storage
         .from('service-photos')
-        .getPublicUrl(fileName);
+        .getPublicUrl(storagePath);
 
       const { data: photoData, error: insertError } = await supabase
         .from('photos')
@@ -207,6 +298,7 @@ export function useServiceOrder(orderId: string) {
           url: urlData.publicUrl,
           gps_lat: gpsLat || null,
           gps_long: gpsLong || null,
+          taken_at: now.toISOString(),
         })
         .select()
         .single();

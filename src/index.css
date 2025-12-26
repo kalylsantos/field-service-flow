@@ -96,6 +96,10 @@
 }
 
 @layer utilities {
+    .safe-area-inset {
+        padding-top: env(safe-area-inset-top);
+    }
+
     .glass-card {
         @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl dark:bg-black/70 dark:border-white/10;
     }

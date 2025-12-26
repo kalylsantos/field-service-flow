@@ -7,6 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   userRole: UserRole | null;
+  secrets: Record<string, string>;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [secrets, setSecrets] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchUserRole = async (userId: string) => {
@@ -41,33 +43,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const fetchSecrets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('app_secrets' as any)
+        .select('name, value');
+
+      if (error) {
+        console.error('Error fetching app secrets:', error);
+        return {};
+      }
+
+      const secretsMap: Record<string, string> = {};
+      data?.forEach((s: any) => {
+        secretsMap[s.name] = s.value;
+      });
+      return secretsMap;
+    } catch (error) {
+      console.error('Error fetching app secrets:', error);
+      return {};
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          fetchUserRole(session.user.id).then((role) => {
+          try {
+            const [role, fetchedSecrets] = await Promise.all([
+              fetchUserRole(session.user.id),
+              fetchSecrets()
+            ]);
             setUserRole(role);
+            setSecrets(fetchedSecrets);
+          } catch (err) {
+            console.error('Error during post-auth fetch:', err);
+          } finally {
             setLoading(false);
-          });
+          }
         } else {
           setUserRole(null);
+          setSecrets({});
           setLoading(false);
         }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchUserRole(session.user.id).then((role) => {
+        try {
+          const [role, fetchedSecrets] = await Promise.all([
+            fetchUserRole(session.user.id),
+            fetchSecrets()
+          ]);
           setUserRole(role);
+          setSecrets(fetchedSecrets);
+        } catch (err) {
+          console.error('Error during initial session fetch:', err);
+        } finally {
           setLoading(false);
-        });
+        }
       } else {
         setLoading(false);
       }
@@ -108,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, userRole, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, userRole, secrets, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
