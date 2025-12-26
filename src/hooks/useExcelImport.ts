@@ -20,7 +20,7 @@ export function useExcelImport() {
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(worksheet);
-          
+
           setParsedData(jsonData);
           resolve(jsonData);
         } catch (error) {
@@ -80,7 +80,7 @@ export function useExcelImport() {
 
     for (const row of data) {
       const normalized = normalizeRow(row);
-      
+
       if (normalized.latitude && normalized.longitude) {
         updatedData.push(row);
         continue;
@@ -108,26 +108,33 @@ export function useExcelImport() {
     return updatedData;
   };
 
-  const importToDatabase = async (data: ExcelRow[]) => {
+  const importToDatabase = async (data: ExcelRow[], customDate?: string) => {
     setImporting(true);
 
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      
+
+      // Use custom date if provided (for testing), otherwise use current date
+      const importTimestamp = customDate
+        ? new Date(customDate).toISOString()
+        : new Date().toISOString();
+
       // Get next batch number for today
-      const today = new Date().toISOString().split('T')[0];
+      // Get next batch number for the import date
+      const today = importTimestamp.split('T')[0];
       const { data: batchData } = await supabase.rpc('get_next_batch_number', { p_date: today });
       const batchNumber = batchData || 1;
 
-      // Create import log entry
+      // Create import log entry with custom or current timestamp
       const { data: importLog, error: logError } = await supabase
         .from('import_logs')
         .insert({
           imported_by: user?.id,
+          imported_at: importTimestamp, // Timestamp with time
+          import_date: today, // Date only (yyyy-MM-dd)
           orders_count: data.length,
           batch_number: batchNumber,
-          import_date: today,
         })
         .select()
         .single();
@@ -138,9 +145,14 @@ export function useExcelImport() {
         const normalized = normalizeRow(row);
         const lat = normalized.latitude ? parseFloat(String(normalized.latitude)) : null;
         const lon = normalized.longitude ? parseFloat(String(normalized.longitude)) : null;
-        
+
+        // Generate unique ID by combining sequencial/protocol with import_log_id
+        // This ensures each import creates new records (additive)
+        const baseId = normalized.sequencial || normalized.protocol || `OS-${Math.random().toString(36).substr(2, 9)}`;
+        const uniqueId = `${baseId}-${importLog.id.slice(0, 8)}`; // Add import_log prefix to make unique
+
         return {
-          id: normalized.sequencial || normalized.protocol || `OS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: uniqueId,
           sequencial: normalized.sequencial,
           protocol: normalized.protocol,
           service_type: normalized.service_type,
@@ -158,9 +170,10 @@ export function useExcelImport() {
         };
       });
 
+      // Use INSERT instead of UPSERT to make imports additive
       const { data: insertedData, error } = await supabase
         .from('service_orders')
-        .upsert(ordersToInsert, { onConflict: 'id' })
+        .insert(ordersToInsert)
         .select();
 
       if (error) throw error;

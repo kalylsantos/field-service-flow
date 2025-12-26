@@ -2,8 +2,10 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useExcelImport } from '@/hooks/useExcelImport';
-import { Upload, MapPin, Check, X, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Upload, MapPin, Check, X, Loader2, FileSpreadsheet, Calendar } from 'lucide-react';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface ExcelImportProps {
@@ -13,6 +15,7 @@ interface ExcelImportProps {
 export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [customDate, setCustomDate] = useState<string>(''); // Data customizada opcional
 
   const {
     parseExcel,
@@ -37,9 +40,10 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
   };
 
   const handleImport = async () => {
-    const result = await importToDatabase(parsedData);
+    const result = await importToDatabase(parsedData, customDate || undefined);
     if (result.success) {
       setFileName(null);
+      setCustomDate('');
       onImportComplete();
     }
   };
@@ -164,6 +168,25 @@ export function ExcelImport({ onImportComplete }: ExcelImportProps) {
                   ... e mais {parsedData.length - 10} linhas
                 </div>
               )}
+            </div>
+
+            {/* Campo de data customizada para testes */}
+            <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <Label htmlFor="custom-date" className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
+                <Calendar className="h-4 w-4" />
+                Data de Importação (Opcional - Para Testes)
+              </Label>
+              <Input
+                id="custom-date"
+                type="datetime-local"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                placeholder="Deixe vazio para usar data atual"
+                className="bg-white dark:bg-gray-950"
+              />
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                💡 Se não especificar, usará a data/hora atual
+              </p>
             </div>
 
             <div className="flex gap-2">

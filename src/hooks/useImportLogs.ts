@@ -27,11 +27,18 @@ export function useImportLogs() {
       if (error) throw error;
 
       const formattedLogs: ImportLog[] = (data || []).map((log) => {
-        const date = new Date(log.import_date);
-        const formattedDate = date.toLocaleDateString('pt-BR');
+        // Extract date from imported_at timestamp
+        const timestamp = new Date(log.imported_at);
+        const formattedDate = timestamp.toLocaleDateString('pt-BR');
+        const formattedTime = timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        // Extract date portion for import_date field (yyyy-MM-dd format)
+        const importDate = log.imported_at.split(' ')[0];
+
         return {
           ...log,
-          label: `${formattedDate} - ${log.batch_number}`,
+          import_date: importDate, // Add extracted date
+          label: `${formattedDate} ${formattedTime} - Lote ${log.batch_number}`,
         };
       });
 
