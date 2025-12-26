@@ -33,12 +33,12 @@ export function useImportLogs() {
         const formattedTime = timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
         // Extract date portion for import_date field (yyyy-MM-dd format)
-        const importDate = log.imported_at.split(' ')[0];
+        const importDate = log.import_date || log.imported_at.substring(0, 10);
 
         return {
           ...log,
           import_date: importDate, // Add extracted date
-          label: `${formattedDate} ${formattedTime} - Lote ${log.batch_number}`,
+          label: `Lote ${log.batch_number} - ${formattedDate} ${formattedTime}`,
         };
       });
 

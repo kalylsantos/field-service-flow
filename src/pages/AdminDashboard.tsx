@@ -69,6 +69,11 @@ export default function AdminDashboard() {
     setCurrentPage(0);
   }, [statusFilter, techFilter, dateFilter, showAllDates, batchFilter]);
 
+  // Reset batch filter when date changes to prevent invalid states
+  useEffect(() => {
+    setBatchFilter('all');
+  }, [dateFilter, showAllDates]);
+
   if (loading) return <FullPageLoading />;
 
   // Filter batches based on selected date

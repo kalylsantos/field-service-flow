@@ -72,7 +72,7 @@ export function TeamAssignment({
     }
 
     const pendingOrdersList = pendingOrders.filter((o) => o.status === 'pending');
-    
+
     if (pendingOrdersList.length === 0) {
       toast({
         title: 'Sem ordens pendentes',
@@ -88,7 +88,7 @@ export function TeamAssignment({
     try {
       // Step 1: Geocode orders without coordinates
       const ordersNeedingGeocoding = pendingOrdersList.filter(o => !hasValidCoordinates(o));
-      
+
       if (ordersNeedingGeocoding.length > 0) {
         toast({
           title: 'Geocodificando endereços...',
@@ -104,9 +104,9 @@ export function TeamAssignment({
         for (const [orderId, coords] of geocodeResults) {
           await supabase
             .from('service_orders')
-            .update({ 
-              client_lat: coords.lat, 
-              client_long: coords.lon 
+            .update({
+              client_lat: coords.lat,
+              client_long: coords.lon
             })
             .eq('id', orderId);
         }
@@ -139,14 +139,19 @@ export function TeamAssignment({
       setOptimizationStep('assigning');
 
       // Step 3: Update database with assignments
-      for (const route of result.routes) {
-        for (const order of route.orders) {
-          await supabase
-            .from('service_orders')
-            .update({ assigned_to: route.technicianId })
-            .eq('id', order.id);
-        }
-      }
+      const updatePromises = result.routes.map(async (route) => {
+        if (route.orders.length === 0) return;
+
+        const orderIds = route.orders.map((o) => o.id);
+        const { error } = await supabase
+          .from('service_orders')
+          .update({ assigned_to: route.technicianId })
+          .in('id', orderIds);
+
+        if (error) throw error;
+      });
+
+      await Promise.all(updatePromises);
 
       // Build summary message
       const routeSummary = result.routes
@@ -198,21 +203,29 @@ export function TeamAssignment({
       const techCount = selectedForDistribution.length;
       const ordersPerTech = Math.ceil(sortedOrders.length / techCount);
 
-      const updates: { id: string; assigned_to: string }[] = [];
+      const updatesByTech: Record<string, string[]> = {};
 
       sortedOrders.forEach((order, index) => {
         const techIndex = Math.floor(index / ordersPerTech);
         const techId = selectedForDistribution[Math.min(techIndex, techCount - 1)];
-        updates.push({ id: order.id, assigned_to: techId });
+
+        if (!updatesByTech[techId]) {
+          updatesByTech[techId] = [];
+        }
+        updatesByTech[techId].push(order.id);
       });
 
-      // Update in batches
-      for (const update of updates) {
-        await supabase
+      // Update in batches per technician
+      const updatePromises = Object.entries(updatesByTech).map(async ([techId, orderIds]) => {
+        const { error } = await supabase
           .from('service_orders')
-          .update({ assigned_to: update.assigned_to })
-          .eq('id', update.id);
-      }
+          .update({ assigned_to: techId })
+          .in('id', orderIds);
+
+        if (error) throw error;
+      });
+
+      await Promise.all(updatePromises);
 
       toast({
         title: 'Rotas distribuídas!',
@@ -332,8 +345,8 @@ export function TeamAssignment({
                     <span>Geocodificando...</span>
                     <span>{geocodingProgress.current} de {geocodingProgress.total}</span>
                   </div>
-                  <Progress 
-                    value={(geocodingProgress.current / geocodingProgress.total) * 100} 
+                  <Progress
+                    value={(geocodingProgress.current / geocodingProgress.total) * 100}
                   />
                   <p className="text-xs text-muted-foreground truncate">
                     {geocodingProgress.currentAddress}
